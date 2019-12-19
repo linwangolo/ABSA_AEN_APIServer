@@ -3,7 +3,7 @@ import asyncio
 
 
 async def make_post(session, data):
-    url = 'http://localhost:4000/predict'
+    url = 'http://10.60.10.128:4000/predict'
     print(f'making post to {url}')
     print(data)
     async with session.post(url, data=data) as resp:
