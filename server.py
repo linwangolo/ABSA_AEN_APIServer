@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-# file: __init__.py
-# author: songyouwei <youwei0314@gmail.com>
-# Copyright (C) 2018. All Rights Reserved.
 
 import time
 import sys
@@ -13,9 +10,10 @@ from aiohttp import web
 sem = asyncio.Semaphore(1)
 
 async def opinion_predict(target, context):
-    inputs = opinion_aen.Input(target, context)
-    print(inputs)
-    results = opinion_aen.predict(inputs.data)
+    inputs = opinion_aen.Input(target, context).data
+    results = []
+    for inp in inputs:
+        results.append(opinion_aen.predict(inp))
     return results
 
 async def predict(request):
