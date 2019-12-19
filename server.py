@@ -6,6 +6,7 @@ sys.path.insert(0,'../')
 import opinion_aen
 import asyncio
 from aiohttp import web
+import json
 
 sem = asyncio.Semaphore(1)
 
@@ -23,7 +24,11 @@ async def predict(request):
         results = await opinion_predict(data['target'], data['context'])
         data['results'] = results
         data['t3'] = time.time()
-        return web.json_response(data)
+        print(type(web.json_response(data)))
+        # resp = web.json_response(data)
+        resp = web.Response(body=json.dumps(data, ensure_ascii=False, default=lambda o: o.__dict__).encode('utf-8'))
+        resp.content_type = 'application/json;charset=utf-8'
+        return resp
 
 
 
