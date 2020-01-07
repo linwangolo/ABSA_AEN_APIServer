@@ -2,6 +2,7 @@
 
 import time
 import sys
+sys.path.insert(0,'../')
 import opinion_aen
 import asyncio
 from aiohttp import web
@@ -13,7 +14,8 @@ async def opinion_predict(target, context):
     inputs = opinion_aen.Input(target, context).data
     results = []
     for inp in inputs:
-        results.append(opinion_aen.predict(inp))
+        prob, sent = opinion_aen.predict(inp)
+        results.append(prob[0].tolist())
     return results
 
 
