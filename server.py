@@ -7,24 +7,29 @@ import opinion_aen
 import asyncio
 from aiohttp import web
 import json
+import logging
+stdio_handler = logging.StreamHandler()
+stdio_handler.setLevel(logging.INFO)
+_logger = logging.getLogger('aiohttp.server')
+_logger.addHandler(stdio_handler)
+_logger.setLevel(logging.DEBUG)
 
 sem = asyncio.Semaphore(1000)
 
-async def opinion_predict(target, context):
-    inputs = opinion_aen.Input(target, context).data
-    results = []
-    for inp in inputs:
-        prob, sent = opinion_aen.predict(inp)
-        results.append(prob[0].tolist())
-    return results
+async def opinion_predict(data, batch_size):
+    opinion_aen.opt.batch_size = batch_size
+    inputs = opinion_aen.Input(data).data
+    prob, polar = opinion_aen.predict(inputs)
+    return prob, polar
 
 
 async def predict(request):
     async with sem:
         data = await request.json()
         data['t2'] = time.time()
-        results = await opinion_predict(data['target'], data['context'])
-        data['results'] = results
+        prob, polar = await opinion_predict(data['data'], data['batch_size'])
+        data['prob'] = prob[0].tolist()
+        data['polar'] = polar[0]
         data['t3'] = time.time()
         resp = web.Response(body=json.dumps(data, ensure_ascii=False, default=lambda o: o.__dict__).encode('utf-8'))
         resp.content_type = 'application/json;charset=utf-8'
