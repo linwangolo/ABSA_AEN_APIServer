@@ -52,15 +52,16 @@ df = df[[i in ['ORG', 'LOC', 'PER'] for i in df['type']]]
 df = df.dropna(how='any')
 
 start_time = time.time()
-df_new = pd.DataFrame()
-for i in range(df.shape[0]):
-    # print(i)
-    content = df.iloc[i]['sentences']
+
+
+def cut_sentence(arg):
+    idx,row = arg
+    content = row['sentences']
     # print(content)
     if pd.isnull(content):       
-        continue
+        return
     if len(content) <= 400:
-        df_new = df_new.append({'word':df.iloc[i]['word'], 'sentences': content}, ignore_index = True)
+        rows = {'word':row['word'], 'sentences': content}  
     else:
         start = 0
         idx_cut = [0]
@@ -80,9 +81,17 @@ for i in range(df.shape[0]):
                 idx_cut.append(idx)
                 start = idx
         for k in range(1, len(idx_cut)):
-            if df.iloc[i]['end'] < idx_cut[k]:
-                df_new = df_new.append({'word':df.iloc[i]['word'], 'sentences': content[idx_cut[k-1]: idx_cut[k]]}, ignore_index = True)
+            if row['end'] < idx_cut[k]:
+                rows = {'word':row['word'], 'sentences': content[idx_cut[k-1]: idx_cut[k]]}
                 break
+    try:
+        return pd.DataFrame(rows, index = [0])
+    except:
+        return
+        
+pool = multiprocessing.Pool(4)
+rows_ = pool.map(cut_sentence, [(idx,row) for idx,row in df.iterrows()])
+df_new = pd.concat(rows_)
 
 
 df = df_new
