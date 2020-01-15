@@ -6,49 +6,61 @@ import os
 import time
 import re
 import math
+import multiprocessing
 
 sem = asyncio.Semaphore(100)
 
 async def make_post(session, data):
-    url = 'http://10.60.10.128:6000/predict'
+    url = 'http://10.60.10.128:1000/predict'
     # print(f'making post to {url}')
     # print(data.decode())
     async with session.post(url, data=data) as resp:
-        try:
-            output = await resp.json()
-            result = pd.DataFrame({'sentiments':output['results']})
-            result['context'] = output['context']
-            result['target'] = output['target']
+        # try:
+        output = await resp.json()
+        batch_data = output['data']
+        prob = output['prob']
+        polar = output['polar']
+        for x,y,z in zip(batch_data, prob, polar):
+            result = pd.DataFrame({'prob': [y]})
+            result['sentiment'] = z
+            result['context'] = x['context']
+            result['target'] = x['target']
             if not os.path.exists(export_path):
                 result.to_csv(export_path, index = False, encoding ='utf-8-sig')
             else:
                 result.to_csv(export_path, mode='a', header=False, index = False, encoding ='utf-8-sig')
-        except:
-            pass
+        # except:
+        #     pass
 
-async def main(inputs):
+async def main(inputs, batch_size):
     async with sem:
         async with aiohttp.ClientSession() as session:
             await asyncio.gather(
-                *[make_post(session, data = json.dumps({'target':inputs['word'],'context':inputs['sentences']}, 
-                                                ensure_ascii=False).encode('utf-8'))]
+                *[make_post(session, data = json.dumps({'data':
+                                                            [{'target':inputs.iloc[i]['word'],'context':inputs.iloc[i]['sentences']} 
+                                                                                            for i in range(inputs.shape[0])], 'batch_size': batch_size}, ensure_ascii=False)) 
+                ]
             )
 
 
 loop = asyncio.get_event_loop()
-filepath = '../2019-12-20.article_ner.csv'
+filepath = '../2019-12-12.article_ner.csv'
 df = pd.read_csv(filepath)
+
 df = df.drop_duplicates(subset=['sentences', 'word'], keep='last')
-df = df[[i in ['ORG', 'LOC', 'PER'] for i in df['type']]] #.iloc[math.ceil(df.shape[0]/2):]   # math.ceil(df.shape[0]/2)
-df_new = pd.DataFrame()
-for i in range(0,df.shape[0]):
-    print(i)
-    content = df.iloc[i]['sentences']
+df = df[[i in ['ORG', 'LOC', 'PER'] for i in df['type']]] 
+df = df.dropna(how='any')
+
+start_time = time.time()
+
+def cut_sentence(arg):
+    idx,row = arg
+    content = row['sentences']
     # print(content)
     if pd.isnull(content):       
-        continue
+        return
     if len(content) <= 400:
-        df_new = df_new.append({'word':df.iloc[i]['word'], 'sentences': content}, ignore_index = True)
+        rows = {'word':row['word'], 'sentences': content}  
     else:
         start = 0
         idx_cut = [0]
@@ -68,19 +80,44 @@ for i in range(0,df.shape[0]):
                 idx_cut.append(idx)
                 start = idx
         for k in range(1, len(idx_cut)):
-            if df.iloc[i]['end'] < idx_cut[k]:
-                df_new = df_new.append({'word':df.iloc[i]['word'], 'sentences': content[idx_cut[k-1]: idx_cut[k]]}, ignore_index = True)
+            if row['end'] < idx_cut[k]:
+                rows = {'word':row['word'], 'sentences': content[idx_cut[k-1]: idx_cut[k]]}
                 break
-df = df_new
-df_new.to_csv('../2019-12-20.article_cutsent.csv', index=False)
+    try:
+        return pd.DataFrame(rows, index = [0])
+    except:
+        return
+        
+pool = multiprocessing.Pool(4)
+rows_ = pool.map(cut_sentence, [(idx,row) for idx,row in df.iterrows()])
+df_new = pd.concat(rows_)
 
-tasks = [main(df.iloc[i]) for i in range(df.shape[0])]   #df.shape[0]
-export_path = '../2019-12-20.article_sentprob_test.csv'
-start_time = time.time()
+
+df = df_new
+df.index=range(df.shape[0])
+rm_l = []
+for i in range(df.shape[0]):
+    if df.iloc[i]['word'] not in df.iloc[i]['sentences']:
+        rm_l.append(i)
+df = df.drop(df.index[rm_l])
+
+cut_time = time.time() - start_time
+print('cut_time: ', cut_time)
+print('total sentences:' , df.shape)
+df.to_csv('../2019-12-12.article_cutsent_test.csv', index=False)
+
+
+batch_size = 115
+batch_ls = list(range(df.shape[0]))[0::batch_size]  
+tasks = [main(df.iloc[batch_ls[i]: batch_ls[i] + batch_size], batch_size) for i in range(len(batch_ls))]  
+
+export_path = '../2019-12-12.article_sentprob_batch115_test.csv'
+
 loop.run_until_complete(asyncio.wait(tasks))
 run_time = time.time() - start_time
 print('run_time: ', run_time)
+result_df = pd.read_csv(export_path)
 with open('../test_run_time.txt', 'a') as f:
-    f.write('Time for ' + filepath + str(df.shape[0]) + ' : ')
+    f.write('Time for ' + filepath + str(result_df.shape[0]) + ' : ')
     f.write(str(round(run_time, 5))+'\n')
     f.close()
