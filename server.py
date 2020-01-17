@@ -2,7 +2,6 @@
 
 import time
 import sys
-sys.path.insert(0,'../')
 import opinion_aen
 import asyncio
 from aiohttp import web
@@ -15,11 +14,14 @@ _logger.addHandler(stdio_handler)
 _logger.setLevel(logging.DEBUG)
 
 sem = asyncio.Semaphore(1000)
+model_path = '/home/ibdo/.pyenv/versions/ABSA-pytorch/lib/python3.6/site-packages/opinion_aen/state_dict/aen_bert_CCF_val_acc0.9048'
+model = opinion_aen.model(model_path)
+
 
 async def opinion_predict(data, batch_size):
-    opinion_aen.opt.batch_size = batch_size
+    model.opt.batch_size = batch_size
     inputs = opinion_aen.Input(data).data
-    prob, polar = opinion_aen.predict(inputs)
+    prob, polar = model.predict(inputs)
     return prob, polar
 
 
