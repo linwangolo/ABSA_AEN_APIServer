@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import argparse
 import time
 import sys
 import opinion_aen
@@ -13,9 +14,6 @@ _logger = logging.getLogger('aiohttp.server')
 _logger.addHandler(stdio_handler)
 _logger.setLevel(logging.DEBUG)
 
-sem = asyncio.Semaphore(1000)
-model_path = '/home/ibdo/.pyenv/versions/ABSA-pytorch/lib/python3.6/site-packages/opinion_aen/state_dict/aen_bert_CCF_val_acc0.9048'
-model = opinion_aen.model(model_path)
 
 
 async def opinion_predict(data, batch_size):
@@ -41,6 +39,16 @@ async def predict(request):
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port', type=int)
+    parser.add_argument('--model_path', type=str)
+    parser.add_argument('--thread_num', type=int)
+    arg = parser.parse_args()
+
+    sem = asyncio.Semaphore(arg.thread_num) # 1000
+    model_path = arg.model_path #'/home/ibdo/.pyenv/versions/ABSA-pytorch/lib/python3.6/site-packages/opinion_aen/state_dict/aen_bert_CCF_val_acc0.9048'
+    model = opinion_aen.model(model_path)
+
     # init web application
     app = web.Application()
 
@@ -48,5 +56,5 @@ if __name__ == '__main__':
     app.add_routes([web.post('/predict', predict)])
 
     # start web application
-    web.run_app(app, port=1600)
+    web.run_app(app, port=arg.port) # 1600
 
