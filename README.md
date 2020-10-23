@@ -15,7 +15,7 @@ Given the target (sentiment to be analyzed) and the sentence which the target is
 The output of API will be
 ```json
 {
-	"data":[{"target":['经济'], "context":['这一年因全球流行病以及各国关系不稳定, 使得经济状况不佳, 但股市经过一个下修后已经回升甚至创新高']}, ...],
+	"data":[{"target":["经济"], "context":["这一年因全球流行病以及各国关系不稳定, 使得经济状况不佳, 但股市经过一个下修后已经回升甚至创新高"]}, ...],
 	"polar":[1, ...],
 	"prob":[[0.035, 0.79, 0.175], ...],
 	"t2":[1603424965.35, ...],
