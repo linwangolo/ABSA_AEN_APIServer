@@ -1,4 +1,4 @@
-# An asynchronized api server for opinion_aen (aspect based sentiment analysis)
+# An asynchronized api server for opinion_aen (aspect based sentiment analysis using AEN-BERT)
 
 ## installation
 ```bash
