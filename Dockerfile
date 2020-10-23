@@ -20,13 +20,14 @@ ADD . /app/
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
 
 # Enviroment variables for GitLab server
-ARG GITLAB_ACCOUNT
-ENV GITLAB_ACCOUNT=$GITLAB_ACCOUNT
-ARG GITLAB_PSWD
-ENV GITLAB_PSWD=$GITLAB_PSWD
+#ARG GITLAB_ACCOUNT
+#ENV GITLAB_ACCOUNT=$GITLAB_ACCOUNT
+#ARG GITLAB_PSWD
+#ENV GITLAB_PSWD=$GITLAB_PSWD
 
 # Install Opinion_AEN package
-RUN git clone http://$GITLAB_ACCOUNT:$GITLAB_PSWD@10.60.10.140:5000/rt/nlp/opinion_aen.git
+#RUN git clone http://$GITLAB_ACCOUNT:$GITLAB_PSWD@IP:PORT/rt/nlp/opinion_aen.git
+RUN git clone https://github.com/linwangolo/ABSA_AEN_Chinese.git
 RUN pip install opinion_aen/
 
 # Make port available to the world outside this container

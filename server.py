@@ -51,8 +51,8 @@ async def predict(request):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--port', type=int)
-    parser.add_argument('--model_path', default = '/home/ibdo/.pyenv/versions/ABSA-pytorch/lib/python3.6/site-packages/opinion_aen/state_dict/aen_bert_CCF_val_acc0.9048', type=str)
+    parser.add_argument('--port', default = 1600, type=int)
+    parser.add_argument('--model_path', default = '~/opinion_aen/state_dict/aen_bert_CCF_val_acc0.9048', type=str)
     parser.add_argument('--thread_num', default = 1000, type=int)
     arg = parser.parse_args()
 
